@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@theme {
+  --animate-spin-slow: spin 4s linear infinite;
+}
+
+@layer utilities {
+  .glow {
+    text-shadow: 0 0 10px rgba(74, 222, 128, 0.5), 0 0 20px rgba(74, 222, 128, 0.3);
+  }
+}
