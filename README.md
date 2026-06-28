@@ -1,100 +1,95 @@
-# JARVIS - AI Operating System
+# JARVIS AI Operating System 🌐🤖
 
-JARVIS is a production-grade AI Personal Assistant designed to feel like an autonomous command center. It is a full-stack AI Operating System that connects seamlessly to Google Workspace, built with modern web technologies and a modular architecture.
+A futuristic, production-grade AI personal assistant that acts as a centralized command center for your digital life, directly inspired by Iron Man's JARVIS.
 
-## Overview
+---
 
-JARVIS acts as an intelligent agent that understands natural language and interacts directly with Google APIs to manage emails, calendar events, spreadsheets, documents, and more. It goes beyond a simple chatbot, offering a futuristic, highly interactive UI and an autonomous AI agent layer.
+## 🛑 The Problem: Digital Fragmentation
+Modern professionals and developers suffer from extreme digital fragmentation. Every day, we constantly context-switch between our Email clients, Calendars, Spreadsheets, and Task Managers. Managing our workflow requires jumping through dozens of browser tabs, manually copying and pasting information, and wasting immense cognitive energy on repetitive administrative tasks rather than deep, focused work. 
 
-### Key Capabilities
-- **Gmail:** Read, summarize, reply, draft, and prioritize emails.
-- **Calendar:** Schedule, update, resolve conflicts, and view agenda.
-- **Google Sheets:** Create sheets, track data, perform analytics, and insert natural language data.
-- **Google Docs:** Create, edit, summarize, translate, and grammar check.
-- **Drive:** Search, upload, download, and manage permissions.
-- **Contacts & Tasks:** Find contacts, suggest meetings, and manage daily planner tasks.
-- **Voice Mode:** Continuous listening, interrupt support, and a wake word ("Jarvis").
+## 💡 The Solution: Autonomous Automation
+**JARVIS OS** solves this by acting as a fully autonomous command center. Instead of *you* opening tools, the OS integrates your entire Google Workspace (Gmail, Calendar, Sheets) into a single, highly interactive dashboard. 
 
-## Technology Stack
+Powered by **Google's Gemini AI** with advanced function-calling, JARVIS allows you to manage your entire life through natural language commands. 
+*   **Need to send an email?** Just tell JARVIS who and what to say.
+*   **Need to track a task?** Tell JARVIS, and it instantly logs it into your Google Sheet database.
+*   **Have an interview?** JARVIS schedules it on your calendar automatically.
 
-### Frontend
-- **Framework:** Next.js (Latest App Router) with React and TypeScript
-- **Styling:** Tailwind CSS, Framer Motion, GSAP, shadcn/ui
-- **State & Data Management:** Zustand, React Query
-- **Forms & Validation:** React Hook Form, Zod
+## 🚀 Why It is Useful
+By centralizing all operations into a single pane of glass, JARVIS drastically reduces context switching. The AI handles the syntax and API integrations in the background, transforming how you interact with your tools from *manual operation* to *executive delegation*.
 
-### Backend
-- **Framework:** NestJS with Node.js and TypeScript
-- **Database:** PostgreSQL
-- **ORM:** Prisma
-- **Realtime:** WebSockets
+---
 
-### AI & Integrations
-- **AI Model:** Google Gemini API (gemini-2.5-flash initially, model abstraction for OpenAI/Anthropic support)
-- **Authentication:** Google OAuth 2.0
-- **Integrations:** Gmail API, Calendar API, Drive API, Sheets API, Docs API, People API, Tasks API
+## ✨ Key Features
+*   **Jarvis Quantum Console:** A live-chat interface that parses natural language and executes real-time tool-calling via Gemini.
+*   **Live Authentication:** Secure Google OAuth 2.0 flow integrated directly into Next.js.
+*   **Inbox Feed:** Connects to the Gmail API to read and parse your latest emails in real-time.
+*   **Event Timeline:** Visualizes your upcoming Google Calendar events perfectly formatted in Indian Standard Time (IST).
+*   **Sheet Tasks:** A live-sync task manager that uses Google Sheets as a headless CMS/database. Mark tasks as "Completed" in the UI, and watch the cell update in Google Sheets!
+*   **Immersive UI:** Built with Tailwind CSS, featuring Neon/Cyan accents, a pulsing AI Cognitive Core, and dynamic state-machine rendering.
 
-### Deployment
-- Docker & Docker Compose
-- Environment variable configuration
-- Production architecture with rate limiting, caching, and CI/CD readiness
+---
 
-## Architecture
+## 🛠️ Technology Stack
+*   **Frontend Framework:** Next.js (App Router)
+*   **Language:** TypeScript
+*   **Styling:** Tailwind CSS, Framer Motion (for dynamic UI rendering), and Lucide React (icons)
+*   **AI / LLM:** Google Gemini 2.5 Flash via `@google/genai`
+*   **Integrations (Google Workspace):**
+    *   Gmail API
+    *   Google Calendar API
+    *   Google Sheets API (v4)
+*   **Authentication:** Custom Google OAuth 2.0 flow using `googleapis` and secure HTTP-only cookies
 
-Follows **Clean Architecture**:
+---
 
-Frontend
-↓
-API Gateway
-↓
-AI Agent Layer
-↓
-Tool Calling Layer
-↓
-Google APIs
-↓
-Google Workspace
+## ⚙️ Project Setup & Installation
 
-### Backend Modules
-The backend is highly modular to ensure scalability:
-- `gmail.module`
-- `calendar.module`
-- `drive.module`
-- `docs.module`
-- `sheet.module`
-- `contacts.module`
-- `tasks.module`
-- `meet.module`
+### 1. Prerequisites
+You need a Google Cloud Project with the following APIs enabled:
+*   **Gmail API**
+*   **Google Calendar API**
+*   **Google Sheets API**
+*   **Generative Language API** (for Gemini)
 
-## Design & UI Theme
+### 2. Google OAuth Configuration
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create an **OAuth 2.0 Client ID**.
+3. Under **Authorized redirect URIs**, add: `http://localhost:3000/api/auth/callback`
+4. *(Important)* If your app is in "Testing" mode, go to the **OAuth consent screen** and add your personal email address to the **Test users** list.
 
-The user interface is designed as a futuristic command center, avoiding typical dashboard layouts.
-- **Theme:** Dark Mode, Glassmorphism
-- **Colors:** Neon Blue, Electric Cyan, Purple Accent
-- **Effects:** Animated gradients, floating particles, blur effects, smooth transitions
-- **Components:**
-  - **AI Orb:** Pulses (speaking), rotates (thinking), emits energy waves (executing), glows (finished).
-  - **Left Sidebar:** Navigation links (Dashboard, Gmail, Calendar, Settings, Logs, Memory, Integrations).
-  - **Right Sidebar:** Contextual updates (Today's Schedule, Unread Emails, Quick Notes, AI Suggestions).
-  - **AI Chat Window:** Streaming markdown, code highlighting, dynamic charts, function execution cards, voice waveform.
+### 3. Environment Variables
+Navigate to the `frontend/` directory and create a `.env.local` file with the following keys:
+```env
+GOOGLE_CLIENT_ID=your_client_id_here
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+GOOGLE_SHEET_ID=your_google_sheet_id_here
+GEMINI_API_KEY=your_gemini_api_key_here
+```
 
-## Features
+### 4. Installation & Running
+From the root directory, navigate to the frontend folder and install the dependencies:
+```bash
+cd frontend
+npm install
+npm install googleapis @google/genai cookie
+```
 
-- **Agent Memory:** Conversation memory, task memory, user preferences, pinned documents, meeting history.
-- **AI Features:** Context aware, tool calling, reasoning, self-verification, retry failed actions.
-- **Notification Center:** Toast notifications, execution logs, live API logs, success/failure animations.
-- **Performance:** Lazy loading, React Query caching, streaming, optimistic updates, background sync.
-- **Security:** OAuth, Encrypted/Refresh Tokens, Secure Cookies, CSRF, RBAC, Rate Limiting, Audit Logs.
+Start the development server:
+```bash
+npm run dev
+```
 
-## Setup Instructions
-
-1. **Clone the repository.**
-2. **Install dependencies:**
-   - Frontend: `cd frontend && npm install`
-   - Backend: `cd backend && npm install`
-3. **Configure Environment Variables:**
-   Create `.env` files in both the frontend and backend based on the provided sample configurations.
-4. **Run Services:**
-   - Database: `docker-compose up -d`
-   - Backend: `cd backend && npm run start:dev`
-   - Frontend: `cd frontend && npm run dev`
+### 5. How to Check & Test the Application
+1. Open your browser to `http://localhost:3000`.
+2. Notice the system is locked down. Click **Connect Google** in the top right.
+3. Complete the Google Sign-in flow and grant the requested permissions.
+4. Once redirected back, the system is online!
+5. **Test Commands in the Input Box:**
+   *   *"Create a meeting in my google calendar to have food at 6:00 PM today"*
+   *   *"Send an email to john@example.com about the software developer role"*
+   *   *"Add a task to my google sheet to review the pull request"*
+6. **Check the Tabs:**
+   *   Click **INBOX FEED** to see your latest emails.
+   *   Click **TIMELINE** to see the meeting you just scheduled.
+   *   Click **SHEET TASKS** to see the task you logged. Click "MARK DONE" to watch it update your actual Google Sheet!

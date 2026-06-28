@@ -25,6 +25,10 @@ export default function JarvisDashboard() {
     }
   ]);
   const [activeTab, setActiveTab] = useState("JARVIS CHAT");
+  const [emails, setEmails] = useState<any[]>([]);
+  const [events, setEvents] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loadingTab, setLoadingTab] = useState(false);
   
   const chatRef = useRef<HTMLDivElement>(null);
 
@@ -47,10 +51,33 @@ export default function JarvisDashboard() {
   }, []);
 
   useEffect(() => {
-    if (chatRef.current) {
+    if (chatRef.current && activeTab === "JARVIS CHAT") {
       chatRef.current.scrollTop = chatRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === "INBOX FEED") {
+      setLoadingTab(true);
+      fetch("/api/gmail/list").then(r => r.json()).then(d => { setEmails(d.emails || []); setLoadingTab(false); });
+    } else if (activeTab === "TIMELINE") {
+      setLoadingTab(true);
+      fetch("/api/calendar/list").then(r => r.json()).then(d => { setEvents(d.events || []); setLoadingTab(false); });
+    } else if (activeTab === "SHEET TASKS") {
+      setLoadingTab(true);
+      fetch("/api/sheets/list").then(r => r.json()).then(d => { setTasks(d.tasks || []); setLoadingTab(false); });
+    }
+  }, [activeTab]);
+
+  const toggleTaskStatus = async (rowIndex: number, currentStatus: string) => {
+    const newStatus = currentStatus === 'SUCCESS' ? 'PENDING' : 'SUCCESS';
+    setTasks(prev => prev.map(t => t.rowIndex === rowIndex ? { ...t, status: newStatus } : t));
+    await fetch("/api/sheets/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rowIndex, status: newStatus })
+    });
+  };
 
   const addMessage = (sender: "user" | "jarvis", text: string, type: "text" | "action" | "email-preview" = "text") => {
     setMessages(prev => [...prev, {
@@ -305,89 +332,153 @@ export default function JarvisDashboard() {
           </div>
 
           {/* Chat / Feed Area */}
-          <div className="flex-1 overflow-y-auto p-6 font-mono text-xs flex flex-col gap-6" ref={chatRef}>
-            <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-4">Jarvis Quantum Console</div>
+          <div className="flex-1 overflow-y-auto p-6 font-mono text-xs flex flex-col gap-6" ref={activeTab === 'JARVIS CHAT' ? chatRef : null}>
+            <div className="text-[10px] text-gray-600 uppercase tracking-widest mb-4">
+              {activeTab === 'JARVIS CHAT' && 'Jarvis Quantum Console'}
+              {activeTab === 'INBOX FEED' && 'Email Communications'}
+              {activeTab === 'TIMELINE' && 'Calendar Events'}
+              {activeTab === 'SHEET TASKS' && 'Task Matrix'}
+              {activeTab === 'AUDIT LOGS' && 'System Audit'}
+            </div>
             
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'self-end items-end' : 'self-start'}`}>
-                <div className="text-[9px] text-gray-600 mb-1 uppercase tracking-widest flex items-center gap-2">
-                  {msg.sender === 'user' ? (
-                    <>COMMANDER - {msg.timestamp}</>
-                  ) : (
-                    <>JARVIS - {msg.timestamp}</>
-                  )}
-                </div>
-                
-                {msg.sender === 'user' ? (
-                  <div className="bg-[#1a1025] border border-purple-500/30 text-purple-200 px-4 py-3 rounded-xl rounded-tr-sm shadow-[0_0_15px_rgba(168,85,247,0.1)]">
-                    {msg.text}
+            {loadingTab ? (
+              <div className="text-cyan-500 animate-pulse uppercase tracking-widest text-center mt-20">Fetching Core Data Matrix...</div>
+            ) : activeTab === 'JARVIS CHAT' ? (
+              <>
+                {messages.map((msg) => (
+                  <div key={msg.id} className={`flex flex-col max-w-[85%] ${msg.sender === 'user' ? 'self-end items-end' : 'self-start'}`}>
+                    <div className="text-[9px] text-gray-600 mb-1 uppercase tracking-widest flex items-center gap-2">
+                      {msg.sender === 'user' ? (
+                        <>COMMANDER - {msg.timestamp}</>
+                      ) : (
+                        <>JARVIS - {msg.timestamp}</>
+                      )}
+                    </div>
+                    
+                    {msg.sender === 'user' ? (
+                      <div className="bg-[#1a1025] border border-purple-500/30 text-purple-200 px-4 py-3 rounded-xl rounded-tr-sm shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+                        {msg.text}
+                      </div>
+                    ) : (
+                      msg.type === 'action' ? (
+                        <div className="text-yellow-500/90 py-2">
+                          {msg.text}
+                        </div>
+                      ) : msg.type === 'email-preview' ? (
+                        <div className="mt-2 bg-[#050508] border border-cyan-900/50 rounded-lg p-4 w-full max-w-md shadow-xl relative overflow-hidden">
+                          <div className="absolute left-0 top-0 w-1 h-full bg-cyan-500" />
+                          {(() => {
+                            try {
+                              const emailData = JSON.parse(msg.text);
+                              return (
+                                <div className="flex flex-col gap-2">
+                                  <div className="text-cyan-400 font-sans text-sm font-bold">{emailData.from}</div>
+                                  <div className="text-white font-sans font-medium">{emailData.subject}</div>
+                                  <div className="text-gray-400 font-sans mt-2">{emailData.body}</div>
+                                </div>
+                              );
+                            } catch(e) {
+                              return <div>{msg.text}</div>
+                            }
+                          })()}
+                        </div>
+                      ) : (
+                        <div className="bg-[#050508] border border-white/10 text-cyan-50 px-4 py-3 rounded-xl rounded-tl-sm text-sm">
+                          {msg.text}
+                        </div>
+                      )
+                    )}
                   </div>
-                ) : (
-                  msg.type === 'action' ? (
-                    <div className="text-yellow-500/90 py-2">
-                      {msg.text}
-                    </div>
-                  ) : msg.type === 'email-preview' ? (
-                    <div className="mt-2 bg-[#050508] border border-cyan-900/50 rounded-lg p-4 w-full max-w-md shadow-xl relative overflow-hidden">
-                      <div className="absolute left-0 top-0 w-1 h-full bg-cyan-500" />
-                      {(() => {
-                        try {
-                          const emailData = JSON.parse(msg.text);
-                          return (
-                            <div className="flex flex-col gap-2">
-                              <div className="text-cyan-400 font-sans text-sm font-bold">{emailData.from}</div>
-                              <div className="text-white font-sans font-medium">{emailData.subject}</div>
-                              <div className="text-gray-400 font-sans mt-2">{emailData.body}</div>
-                            </div>
-                          );
-                        } catch(e) {
-                          return <div>{msg.text}</div>
-                        }
-                      })()}
-                    </div>
-                  ) : (
-                    <div className="bg-[#050508] border border-white/10 text-cyan-50 px-4 py-3 rounded-xl rounded-tl-sm text-sm">
-                      {msg.text}
-                    </div>
-                  )
+                ))}
+                
+                {status === 'PROCESSING' && (
+                  <div className="self-start flex items-center gap-2 mt-2">
+                    <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce" />
+                    <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce delay-100" />
+                    <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce delay-200" />
+                  </div>
                 )}
+                
+                {status === 'AWAITING_CONFIRMATION' && (
+                  <div className="self-start mt-4 bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-lg flex gap-4 items-center">
+                    <button 
+                      onClick={() => {
+                        addMessage("user", "Confirm Action");
+                        setStatus("PROCESSING");
+                        setTimeout(() => {
+                          addMessage("jarvis", "COMMAND STAGE CONFIRMED: Action has been successfully compiled and sent to Google API matrix.", "action");
+                          setStatus("SUCCESS");
+                          setTimeout(() => setStatus("IDLE"), 2000);
+                        }, 1500);
+                      }}
+                      className="px-4 py-2 bg-yellow-500 text-black text-xs font-bold rounded uppercase tracking-widest hover:bg-yellow-400 transition"
+                    >
+                      Approve Mission
+                    </button>
+                    <button 
+                      onClick={() => {
+                        addMessage("user", "Abort Action");
+                        setStatus("IDLE");
+                        addMessage("jarvis", "Mission aborted by commander.", "action");
+                      }}
+                      className="px-4 py-2 bg-black/40 border border-white/10 text-gray-400 text-xs font-bold rounded uppercase tracking-widest hover:bg-white/10 transition"
+                    >
+                      Abort
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : activeTab === 'INBOX FEED' ? (
+              <div className="flex flex-col gap-3">
+                {emails.map(email => (
+                  <div key={email.id} className="bg-[#1a1a24] border border-white/5 rounded-lg p-4 hover:border-cyan-500/30 transition">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="text-cyan-400 font-sans text-sm font-bold truncate max-w-[70%]">{email.from}</div>
+                      <div className="text-gray-500 text-[9px]">{new Date(email.date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}</div>
+                    </div>
+                    <div className="text-white font-medium mb-2">{email.subject}</div>
+                    <div className="text-gray-400 text-xs truncate">{email.snippet}</div>
+                  </div>
+                ))}
+                {emails.length === 0 && <div className="text-center text-gray-500 mt-10">No recent emails found.</div>}
               </div>
-            ))}
-            
-            {status === 'PROCESSING' && (
-              <div className="self-start flex items-center gap-2 mt-2">
-                <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce" />
-                <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce delay-100" />
-                <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-bounce delay-200" />
+            ) : activeTab === 'TIMELINE' ? (
+              <div className="flex flex-col gap-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-px before:bg-white/10">
+                {events.map(event => (
+                  <div key={event.id} className="relative pl-8">
+                    <div className="absolute left-2 top-3 w-2.5 h-2.5 bg-cyan-500 rounded-full shadow-[0_0_8px_cyan]" />
+                    <div className="bg-[#1a1a24] border border-white/5 rounded-lg p-4 hover:border-cyan-500/30 transition">
+                      <div className="text-white font-medium mb-1 text-sm">{event.summary || "No Title"}</div>
+                      <div className="text-cyan-400 text-[10px] uppercase tracking-wider mb-2">
+                        {event.start?.dateTime ? new Date(event.start.dateTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' }) : 'All Day'} - {event.end?.dateTime ? new Date(event.end.dateTime).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', timeStyle: 'short' }) : ''}
+                      </div>
+                      {event.location && <div className="text-gray-400 text-[10px]">📍 {event.location}</div>}
+                    </div>
+                  </div>
+                ))}
+                {events.length === 0 && <div className="text-center text-gray-500 mt-10 pl-8">No upcoming events.</div>}
               </div>
-            )}
-            
-            {status === 'AWAITING_CONFIRMATION' && (
-              <div className="self-start mt-4 bg-yellow-500/10 border border-yellow-500/30 p-4 rounded-lg flex gap-4 items-center">
-                <button 
-                  onClick={() => {
-                    addMessage("user", "Confirm Action");
-                    setStatus("PROCESSING");
-                    setTimeout(() => {
-                      addMessage("jarvis", "COMMAND STAGE CONFIRMED: Action has been successfully compiled and sent to Google API matrix.", "action");
-                      setStatus("SUCCESS");
-                      setTimeout(() => setStatus("IDLE"), 2000);
-                    }, 1500);
-                  }}
-                  className="px-4 py-2 bg-yellow-500 text-black text-xs font-bold rounded uppercase tracking-widest hover:bg-yellow-400 transition"
-                >
-                  Approve Mission
-                </button>
-                <button 
-                  onClick={() => {
-                    addMessage("user", "Abort Action");
-                    setStatus("IDLE");
-                    addMessage("jarvis", "Mission aborted by commander.", "action");
-                  }}
-                  className="px-4 py-2 bg-black/40 border border-white/10 text-gray-400 text-xs font-bold rounded uppercase tracking-widest hover:bg-white/10 transition"
-                >
-                  Abort
-                </button>
+            ) : activeTab === 'SHEET TASKS' ? (
+              <div className="flex flex-col gap-3">
+                {tasks.map(task => (
+                  <div key={task.rowIndex} className="flex items-center justify-between bg-[#1a1a24] border border-white/5 rounded-lg p-4 hover:border-cyan-500/30 transition">
+                    <div className="flex flex-col gap-1 max-w-[70%]">
+                      <div className="text-[9px] text-gray-500 uppercase">{task.timestamp} | {task.logId}</div>
+                      <div className={`text-sm ${task.status === 'SUCCESS' ? 'text-gray-500 line-through' : 'text-white'}`}>{task.description}</div>
+                    </div>
+                    <button 
+                      onClick={() => toggleTaskStatus(task.rowIndex, task.status)}
+                      className={`px-4 py-2 rounded text-[10px] font-bold tracking-widest uppercase transition ${task.status === 'SUCCESS' ? 'bg-green-500/10 text-green-500 border border-green-500/30' : 'bg-cyan-500 text-black'}`}
+                    >
+                      {task.status === 'SUCCESS' ? 'COMPLETED' : 'MARK DONE'}
+                    </button>
+                  </div>
+                ))}
+                {tasks.length === 0 && <div className="text-center text-gray-500 mt-10">No tasks found in sheet.</div>}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 mt-20 uppercase tracking-widest">
+                Audit Logs Archive Offline
               </div>
             )}
           </div>
